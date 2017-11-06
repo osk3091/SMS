@@ -1,0 +1,120 @@
+<html>
+<body>
+<pre>
+<h1>�Vision Build Log</h1>
+<h2>Tool Versions:</h2>
+IDE-Version: �Vision V5.24.2.0
+Copyright (C) 2017 ARM Ltd and ARM Germany GmbH. All rights reserved.
+License Information: Ake Tudo, AkeTudo, LIC=----
+ 
+Tool Versions:
+Toolchain:       MDK-Lite  Version: 5.24.1
+Toolchain Path:  P:\softwares\Keil_v5\ARM\ARMCC\Bin
+C Compiler:      Armcc.exe V5.06 update 5 (build 528)
+Assembler:       Armasm.exe V5.06 update 5 (build 528)
+Linker/Locator:  ArmLink.exe V5.06 update 5 (build 528)
+Library Manager: ArmAr.exe V5.06 update 5 (build 528)
+Hex Converter:   FromElf.exe V5.06 update 5 (build 528)
+CPU DLL:         SARMCM3.DLL V5.24.1
+Dialog DLL:      DARMSTM.DLL V1.68.0.0
+Target DLL:      Segger\JL2CM3.dll V2.99.26.0
+Dialog DLL:      TARMSTM.DLL V1.66.0.0
+ 
+<h2>Project:</h2>
+P:\studia\semX\SMS\lab\Projekty\SMS_02_OnuohaDalida_Ch\Projekt02\projekt02.uvprojx
+Project File Date:  11/04/2017
+
+<h2>Output:</h2>
+*** Using Compiler 'V5.06 update 5 (build 528)', folder: 'P:\softwares\Keil_v5\ARM\ARMCC\Bin'
+Build target 'Target 1'
+compiling main.c...
+main.c(83): warning:  #177-D: variable "ADC_InitStructure"  was declared but never referenced
+        ADC_InitTypeDef  ADC_InitStructure;
+main.c(84): warning:  #177-D: variable "TIM_TimeBaseStructure"  was declared but never referenced
+        TIM_TimeBaseInitTypeDef TIM_TimeBaseStructure;
+main.c(85): warning:  #177-D: variable "TIM_OCInitStructure"  was declared but never referenced
+        TIM_OCInitTypeDef TIM_OCInitStructure;
+main.c(110): warning:  #177-D: variable "NVIC_InitStructure"  was declared but never referenced
+        NVIC_InitTypeDef NVIC_InitStructure;
+main.c(132): warning:  #177-D: variable "GPIO_InitStructure"  was declared but never referenced
+    GPIO_InitTypeDef  GPIO_InitStructure; 
+main.c(151): warning:  #177-D: variable "TIM_TimeBaseStructure"  was declared but never referenced
+        TIM_TimeBaseInitTypeDef TIM_TimeBaseStructure;
+main.c(152): warning:  #177-D: variable "TIM_OCInitStructure"  was declared but never referenced
+        TIM_OCInitTypeDef TIM_OCInitStructure;
+main.c(168): warning:  #177-D: variable "TIM_TimeBaseStructure"  was declared but never referenced
+        TIM_TimeBaseInitTypeDef TIM_TimeBaseStructure;
+main.c(169): warning:  #177-D: variable "EXTI_InitStructure"  was declared but never referenced
+        EXTI_InitTypeDef EXTI_InitStructure;
+main.c(179): warning:  #177-D: variable "EXTI_InitStructure"  was declared but never referenced
+        EXTI_InitTypeDef EXTI_InitStructure;
+main.c: 10 warnings, 0 errors
+compiling stm32f10x_it.c...
+compiling delay.c...
+delay.c(9): warning:  #1-D: last line of file ends without a newline
+  }     
+delay.c: 1 warning, 0 errors
+compiling misc.c...
+compiling stm32f10x_flash.c...
+compiling stm32f10x_gpio.c...
+compiling stm32f10x_rcc.c...
+compiling stm32f10x_adc.c...
+compiling stm32f10x_tim.c...
+compiling stm32f10x_exti.c...
+compiling core_cm3.c...
+compiling system_stm32f10x.c...
+assembling startup_stm32f10x_md.s...
+compiling lcd_hd44780.c...
+..\Drivers\LCD1602\lcd_hd44780.c(22): warning:  #188-D: enumerated type mixed with another type
+        GPIO_WriteBit(
+CD_GPIO, 
+CD_D4, (nibbleToWrite & 0x01)>0);
+..\Drivers\LCD1602\lcd_hd44780.c(23): warning:  #188-D: enumerated type mixed with another type
+        GPIO_WriteBit(
+CD_GPIO, 
+CD_D5, (nibbleToWrite & 0x02)>0);
+..\Drivers\LCD1602\lcd_hd44780.c(24): warning:  #188-D: enumerated type mixed with another type
+        GPIO_WriteBit(
+CD_GPIO, 
+CD_D6, (nibbleToWrite & 0x04)>0);
+..\Drivers\LCD1602\lcd_hd44780.c(25): warning:  #188-D: enumerated type mixed with another type
+        GPIO_WriteBit(
+CD_GPIO, 
+CD_D7, (nibbleToWrite & 0x08)>0);
+..\Drivers\LCD1602\lcd_hd44780.c(114): warning:  #2548-D: multicharacter character literal (potential portability problem)
+                        case 'ą':
+..\Drivers\LCD1602\lcd_hd44780.c(117): warning:  #2548-D: multicharacter character literal (potential portability problem)
+                        case 'ż':
+..\Drivers\LCD1602\lcd_hd44780.c(120): warning:  #2548-D: multicharacter character literal (potential portability problem)
+                        case 'ć':
+..\Drivers\LCD1602\lcd_hd44780.c(123): warning:  #2548-D: multicharacter character literal (potential portability problem)
+                        case 'ł':
+..\Drivers\LCD1602\lcd_hd44780.c(126): warning:  #2548-D: multicharacter character literal (potential portability problem)
+                        case 'ę':
+..\Drivers\LCD1602\lcd_hd44780.c(129): warning:  #2548-D: multicharacter character literal (potential portability problem)
+                        case 'ń':
+..\Drivers\LCD1602\lcd_hd44780.c(132): warning:  #2548-D: multicharacter character literal (potential portability problem)
+                        case 'ó':
+..\Drivers\LCD1602\lcd_hd44780.c(135): warning:  #2548-D: multicharacter character literal (potential portability problem)
+                        case 'ś':                              
+..\Drivers\LCD1602\lcd_hd44780.c: 12 warnings, 0 errors
+linking...
+Program Size: Code=2156 RO-data=268 RW-data=8 ZI-data=1632  
+".\Objects\projekt02.axf" - 0 Error(s), 23 Warning(s).
+
+<h2>Software Packages used:</h2>
+
+Package Vendor: Keil
+                http://www.keil.com/pack/Keil.STM32F1xx_DFP.2.2.0.pack
+                Keil.STM32F1xx_DFP.2.2.0
+                STMicroelectronics STM32F1 Series Device Support, Drivers and Examples
+
+<h2>Collection of Component include folders:</h2>
+  .\RTE\_Target_1
+  P:\softwares\Keil_v5\ARM\PACK\Keil\STM32F1xx_DFP\2.2.0\Device\Include
+
+<h2>Collection of Component Files used:</h2>
+Build Time Elapsed:  00:00:11
+</pre>
+</body>
+</html>

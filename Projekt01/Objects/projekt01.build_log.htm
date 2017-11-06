@@ -1,0 +1,96 @@
+<html>
+<body>
+<pre>
+<h1>�Vision Build Log</h1>
+<h2>Tool Versions:</h2>
+IDE-Version: �Vision V5.21.1.0
+Copyright (C) 2016 ARM Ltd and ARM Germany GmbH. All rights reserved.
+License Information: Patryk Chaber, Warsaw University of Technology, LIC=Z3CX7-E3RWC-YBQE9-4JWRV-3NT06-JCAQU
+ 
+Tool Versions:
+Toolchain:       MDK-ARM Professional  Version: 5.21a
+Toolchain Path:  C:\Keil_v5\ARM\ARMCC\Bin
+C Compiler:      Armcc.exe V5.06 update 3 (build 300)
+Assembler:       Armasm.exe V5.06 update 3 (build 300)
+Linker/Locator:  ArmLink.exe V5.06 update 3 (build 300)
+Library Manager: ArmAr.exe V5.06 update 3 (build 300)
+Hex Converter:   FromElf.exe V5.06 update 3 (build 300)
+CPU DLL:         SARMCM3.DLL V5.21a
+Dialog DLL:      DCM.DLL V1.13.8.0
+Target DLL:      Segger\JL2CM3.dll V2.99.23.0
+Dialog DLL:      TCM.DLL V1.14.14.0
+ 
+<h2>Project:</h2>
+E:\SMS_2_Onuoha_Dailida\Projekt01\projekt01.uvprojx
+Project File Date:  10/24/2017
+
+<h2>Output:</h2>
+*** Using Compiler 'V5.06 update 3 (build 300)', folder: 'C:\Keil_v5\ARM\ARMCC\Bin'
+Rebuild target 'Target 1'
+compiling misc.c...
+compiling stm32f10x_flash.c...
+compiling main.c...
+main.c(62): warning:  #167-D: argument of type "char *" is incompatible with parameter of type "unsigned char *"
+  					LCD_WriteText(buffer);
+main.c(30): warning:  #177-D: variable "val" was declared but never referenced
+  		unsigned int val = 1024;
+main.c(31): warning:  #177-D: variable "button" was declared but never referenced
+  		bool button = false;
+main.c(39): warning:  #177-D: variable "wsk" was declared but never referenced
+  	char *wsk = &sym;
+main.c: 4 warnings, 0 errors
+compiling stm32f10x_rcc.c...
+compiling stm32f10x_gpio.c...
+compiling stm32f10x_it.c...
+compiling stm32f10x_tim.c...
+assembling startup_stm32f10x_md.s...
+compiling core_cm3.c...
+compiling stm32f10x_adc.c...
+compiling system_stm32f10x.c...
+compiling lcd_hd44780.c...
+..\Drivers\LCD1602\lcd_hd44780.c(22): warning:  #188-D: enumerated type mixed with another type
+  	GPIO_WriteBit(
+CD_GPIO, 
+CD_D4, (nibbleToWrite & 0x01)>0);
+..\Drivers\LCD1602\lcd_hd44780.c(23): warning:  #188-D: enumerated type mixed with another type
+  	GPIO_WriteBit(
+CD_GPIO, 
+CD_D5, (nibbleToWrite & 0x02)>0);
+..\Drivers\LCD1602\lcd_hd44780.c(24): warning:  #188-D: enumerated type mixed with another type
+  	GPIO_WriteBit(
+CD_GPIO, 
+CD_D6, (nibbleToWrite & 0x04)>0);
+..\Drivers\LCD1602\lcd_hd44780.c(25): warning:  #188-D: enumerated type mixed with another type
+  	GPIO_WriteBit(
+CD_GPIO, 
+CD_D7, (nibbleToWrite & 0x08)>0);
+..\Drivers\LCD1602\lcd_hd44780.c(114): warning:  #2548-D: multicharacter character literal (potential portability problem)
+  			case 'ą':
+..\Drivers\LCD1602\lcd_hd44780.c(117): warning:  #2548-D: multicharacter character literal (potential portability problem)
+  			case 'ż':
+..\Drivers\LCD1602\lcd_hd44780.c(120): warning:  #2548-D: multicharacter character literal (potential portability problem)
+  			case 'ć':
+..\Drivers\LCD1602\lcd_hd44780.c(123): warning:  #2548-D: multicharacter character literal (potential portability problem)
+  			case 'ł':
+..\Drivers\LCD1602\lcd_hd44780.c(126): warning:  #2548-D: multicharacter character literal (potential portability problem)
+  			case 'ę':
+..\Drivers\LCD1602\lcd_hd44780.c(129): warning:  #2548-D: multicharacter character literal (potential portability problem)
+  			case 'ń':
+..\Drivers\LCD1602\lcd_hd44780.c(132): warning:  #2548-D: multicharacter character literal (potential portability problem)
+  			case 'ó':
+..\Drivers\LCD1602\lcd_hd44780.c(135): warning:  #2548-D: multicharacter character literal (potential portability problem)
+  			case 'ś':				
+..\Drivers\LCD1602\lcd_hd44780.c: 12 warnings, 0 errors
+linking...
+Program Size: Code=9344 RO-data=444 RW-data=4 ZI-data=1636  
+".\Objects\projekt01.axf" - 0 Error(s), 16 Warning(s).
+
+<h2>Collection of Component include folders:</h2>
+  E:\SMS_2_Onuoha_Dailida\Projekt01\RTE
+  C:\Keil_v5\ARM\PACK\Keil\STM32F1xx_DFP\2.1.0\Device\Include
+
+<h2>Collection of Component Files used:</h2>
+Build Time Elapsed:  00:00:12
+</pre>
+</body>
+</html>
