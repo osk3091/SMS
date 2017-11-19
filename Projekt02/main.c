@@ -1,21 +1,34 @@
 #include "stm32f10x.h"
 #include "lcd_hd44780.h"
+
 #include "main.h"
 #include "delay.h"
 #include "stdio.h"
 #include <stdbool.h>   // true, false
+
+
 
 bool RCC_Config(void);
 void GPIO_Config(void);
 void GPIO_SW0_Config(void); 
 void GPIO_TIM4_Config(void); 
 void GPIO_ADC_Config(void);
+unsigned int readADC(void);
 void GPIO_KB_Config(void);
 void NVIC_Config(void);
 void refreshLCD(void);
 
 char KB2char(void);
 
+unsigned char key_buff[] ;
+volatile unsigned int key_pt;
+
+const unsigned char KBkody[16] = {'1','2','3','A',\
+							  '4','5','6','B',\
+							  '7','8','9','C',\
+							  '*','0','#','D'};
+char buffer[32];
+								int i;
 int main(void) {	
   RCC_Config();	      // konfiguracja RCC
   NVIC_Config();      // konfiguracja NVIC
@@ -27,11 +40,35 @@ int main(void) {
 	
   LCD_Initialize();   // inicjalizacja LCD
 	
-	//SysTick_Config(TODO);
-	//SysTick_CLKSourceConfig(TODO);
-	//NVIC_SetPriority(SysTick_IRQn, TODO);
+	SysTick_Config(9000); // (72MHz/8) / 9000 = 1KHz (1/1KHz = 1ms)
+	SysTick_CLKSourceConfig(SysTick_CLKSource_HCLK_Div8);
+	NVIC_SetPriority(SysTick_IRQn, 0);
+	
+	//LED(LEDALL, LED_OFF);
+	
+	//sprintf(buffer, "ADC: %4.1fV", 3.3/4096);
+	//LCD_GoTo(0, 0);
+	
+	//LCD_WriteText(buffer);
+	for(i=0; i<32; i++)
+		key_buff[i]='\0';
 	
 	while(1) {
+		LCD_GoTo(0,0);
+		for(i=0; i<16; i++){
+			LCD_WriteData(key_buff[i]);
+		}
+		LCD_GoTo(0,1);
+		for(i=16; i<32; i++){
+			LCD_WriteData(key_buff[i]);
+		}
+		
+		LED(LED1, LED_TOGGLE);
+
+		Delay(4000);
+		
+		
+
 		// TODO
 	}
 }
@@ -84,6 +121,29 @@ void GPIO_ADC_Config(void){
 	TIM_TimeBaseInitTypeDef TIM_TimeBaseStructure;
 	TIM_OCInitTypeDef TIM_OCInitStructure;
 	
+	
+	ADC_DeInit(ADC1);                                   // reset ustawien ADC1  
+	ADC_InitStructure.ADC_Mode = ADC_Mode_Independent;  // niezalezne dzialanie ADC 1 i 2
+	ADC_InitStructure.ADC_ScanConvMode = DISABLE;       // pomiar pojedynczego kanalu
+	ADC_InitStructure.ADC_ContinuousConvMode = DISABLE;  // pomiar automatyczny
+	ADC_InitStructure.ADC_ExternalTrigConv = ADC_ExternalTrigConv_T2_CC2; // T2CC2->ADC
+	ADC_InitStructure.ADC_DataAlign = ADC_DataAlign_Right; // pomiar wyrownany do prawej
+	ADC_InitStructure.ADC_NbrOfChannel = 1;             // jeden kanal
+	ADC_Init(ADC1, &ADC_InitStructure);                 // inicjalizacja ADC1
+
+	ADC_RegularChannelConfig(ADC1, ADC_Channel_16, 1, ADC_SampleTime_41Cycles5); // konf.
+	ADC_ExternalTrigConvCmd(ADC1, ENABLE);
+	ADC_ITConfig(ADC1, ADC_IT_EOC, ENABLE);
+
+	ADC_Cmd(ADC1, ENABLE);                              // aktywacja ADC1
+
+	ADC_ResetCalibration(ADC1);                         // reset rejestru kalibracji ADC1
+	while(ADC_GetResetCalibrationStatus(ADC1));         // oczekiwanie na koniec resetu
+	ADC_StartCalibration(ADC1);                         // start kalibracji ADC1
+	while(ADC_GetCalibrationStatus(ADC1));              // czekaj na koniec kalibracji
+
+	ADC_TempSensorVrefintCmd(ENABLE);                   // wlaczenie czujnika temperatury
+
   // konfiguracja timera TIM2
 	// TODO
   
@@ -106,31 +166,111 @@ void GPIO_ADC_Config(void){
 	// TODO
 }
 
+unsigned int readADC(void){
+    ADC_SoftwareStartConvCmd(ADC1, ENABLE);                  // start pomiaru
+    while(ADC_GetFlagStatus(ADC1, ADC_FLAG_EOC) == RESET);   // czekaj na koniec pomiaru
+    return ADC_GetConversionValue(ADC1);                     // odczyt pomiaru (12 bit)
+} 
+
+
+
+
+
 void NVIC_Config(void) {
 	NVIC_InitTypeDef NVIC_InitStructure;
+	EXTI_InitTypeDef EXTI_InitStructure;
 	NVIC_SetVectorTable(NVIC_VectTab_FLASH, 0x0);
-	//NVIC_PriorityGroupConfig(TODO);
 	
-	// konfiguracja NVIC dla ADC1
-	// TODO
+	NVIC_ClearPendingIRQ(TIM4_IRQn);                    // wyczyszczenie bitu przerwania
+	NVIC_EnableIRQ(TIM4_IRQn);                          // wlaczenie obslugi przerwania
+	NVIC_InitStructure.NVIC_IRQChannel = TIM4_IRQn;     // nazwa przerwania
+	NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority = 2; // priorytet wywlaszczania
+	NVIC_InitStructure.NVIC_IRQChannelSubPriority = 1;  // podpriorytet
+	NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE;     // wlaczenie
+	NVIC_Init(&NVIC_InitStructure);  
 	
-	// konfiguracja NVIC dla EXTI0
-	// TODO
+	GPIO_EXTILineConfig(GPIO_PortSourceGPIOA, GPIO_PinSource0); // PA0 -> EXTI0_IRQn 
+	EXTI_InitStructure.EXTI_Line = EXTI_Line0;                  // linia : 0
+	EXTI_InitStructure.EXTI_Mode = EXTI_Mode_Interrupt;         // tryb  : przerwanie
+	EXTI_InitStructure.EXTI_Trigger = EXTI_Trigger_Falling;     // zbocze: opadajace
+	EXTI_InitStructure.EXTI_LineCmd = ENABLE;                   // aktywowanie konfig.
+	EXTI_Init(&EXTI_InitStructure);                             // inicjalizacja
+
+	NVIC_ClearPendingIRQ(EXTI0_IRQn);                           // czyszcz. bitu przerw.
+	NVIC_EnableIRQ(EXTI0_IRQn);                                 // wlaczenie przerwania
+	NVIC_InitStructure.NVIC_IRQChannel = EXTI0_IRQn;            // przerwanie EXTI0_IRQn
+	NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority = 0;   // prior. wywlaszczania
+	NVIC_InitStructure.NVIC_IRQChannelSubPriority = 0;          // podpriorytet
+	NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE;             // aktywowanie konfig.
+	NVIC_Init(&NVIC_InitStructure);                             // inicjalizacja
 	
-	// konfiguracja NVIC dla EXTI9_5
-	// TODO
+
+	NVIC_ClearPendingIRQ(TIM3_IRQn);                            // czyszcz. bitu przerw.
+	NVIC_EnableIRQ(TIM3_IRQn);                                  // wlaczenie przerwania
+	NVIC_InitStructure.NVIC_IRQChannel = TIM3_IRQn;             // nazwa przerwania
+	NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority = 1;   // prior. wywlaszczania
+	NVIC_InitStructure.NVIC_IRQChannelSubPriority = 1;          // podpriorytet
+	NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE;             // aktywowanie konfig.
+	NVIC_Init(&NVIC_InitStructure);                             // inicjalizacja
 	
-	// konfiguracja NVIC dla TIM3
-	// TODO
+	NVIC_ClearPendingIRQ(TIM2_IRQn);                            // czyszcz. bitu przerw.
+	NVIC_EnableIRQ(TIM2_IRQn);                                  // wlaczenie przerwania
+	NVIC_InitStructure.NVIC_IRQChannel = TIM2_IRQn;             // nazwa przerwania
+	NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority = 2;   // prior. wywlaszczania
+	NVIC_InitStructure.NVIC_IRQChannelSubPriority = 2;          // podpriorytet
+	NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE;             // aktywowanie konfig.
+	NVIC_Init(&NVIC_InitStructure);                             // inicjalizacja
 	
-	// konfiguracja NVIC dla TIM4
-	// TODO
+	NVIC_ClearPendingIRQ(ADC1_2_IRQn);                            // czyszcz. bitu przerw.
+	NVIC_EnableIRQ(ADC1_2_IRQn);                                  // wlaczenie przerwania
+	NVIC_InitStructure.NVIC_IRQChannel = ADC1_2_IRQn;             // nazwa przerwania
+	NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority = 2;   // prior. wywlaszczania
+	NVIC_InitStructure.NVIC_IRQChannelSubPriority = 2;          // podpriorytet
+	NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE;             // aktywowanie konfig.
+	NVIC_Init(&NVIC_InitStructure);                             // inicjalizacja
+	
+	GPIO_EXTILineConfig(GPIO_PortSourceGPIOD, GPIO_PinSource6); // PA0 -> EXTI0_IRQn 
+	EXTI_InitStructure.EXTI_Line = EXTI_Line6;                  // linia : 0
+	EXTI_InitStructure.EXTI_Mode = EXTI_Mode_Interrupt;         // tryb  : przerwanie
+	EXTI_InitStructure.EXTI_Trigger = EXTI_Trigger_Falling;     // zbocze: opadajace
+	EXTI_InitStructure.EXTI_LineCmd = ENABLE;                   // aktywowanie konfig.
+	EXTI_Init(&EXTI_InitStructure);                             // inicjalizacja
+
+	NVIC_ClearPendingIRQ(EXTI9_5_IRQn);                           // czyszcz. bitu przerw.
+	NVIC_EnableIRQ(EXTI9_5_IRQn);                                 // wlaczenie przerwania
+	NVIC_InitStructure.NVIC_IRQChannel = EXTI9_5_IRQn;            // przerwanie EXTI0_IRQn
+	NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority = 3;   // prior. wywlaszczania
+	NVIC_InitStructure.NVIC_IRQChannelSubPriority = 3;          // podpriorytet
+	NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE;             // aktywowanie konfig.
+	NVIC_Init(&NVIC_InitStructure);                             // inicjalizacja
+	
 }
 
 void GPIO_Config(void) {
   // konfigurowanie portow GPIO
   GPIO_InitTypeDef  GPIO_InitStructure; 
   
+	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_8 | GPIO_Pin_9 | GPIO_Pin_10 | GPIO_Pin_11 | GPIO_Pin_12 | GPIO_Pin_13 | GPIO_Pin_14 | GPIO_Pin_15;        // pin 8
+	GPIO_InitStructure.GPIO_Speed = GPIO_Speed_2MHz; // czestotliwosc zmiany 2MHz
+	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_Out_PP; // wyjscie w trybie push-pull
+	GPIO_Init(GPIOB, &GPIO_InitStructure);           // inicjaliacja portu B
+	
+	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_0;
+	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IN_FLOATING; // wejscie w trybie pull-up
+	GPIO_Init(GPIOA, &GPIO_InitStructure);
+	
+	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_10 | GPIO_Pin_11 | GPIO_Pin_12 | GPIO_Pin_13;        // pin 8
+	GPIO_InitStructure.GPIO_Speed = GPIO_Speed_2MHz; // czestotliwosc zmiany 2MHz
+	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_Out_OD; // wyjscie w trybie push-pull
+	GPIO_Init(GPIOD, &GPIO_InitStructure);           // inicjaliacja portu D
+	
+	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_6 | GPIO_Pin_7 | GPIO_Pin_8 | GPIO_Pin_9;        // pin 8
+	GPIO_InitStructure.GPIO_Speed = GPIO_Speed_2MHz; // czestotliwosc zmiany 2MHz
+	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IN_FLOATING; // wyjscie w trybie push-pull
+	GPIO_Init(GPIOD, &GPIO_InitStructure);           // inicjaliacja portu D
+	
+
+	
 	// PB6 -- przycisk zewnetrzny bez podciagniecia
 	// TODO
 	
@@ -150,8 +290,57 @@ void GPIO_Config(void) {
 void GPIO_TIM4_Config(void) {
 	TIM_TimeBaseInitTypeDef TIM_TimeBaseStructure;
 	TIM_OCInitTypeDef TIM_OCInitStructure;
-    
-  // konfiguracja timera TIM4
+
+	TIM_TimeBaseStructure.TIM_Prescaler = 7200-1;               // 72MHz/7200=10kHz
+	TIM_TimeBaseStructure.TIM_Period = 10000;                   // 10kHz/10000=1Hz (1s)
+	TIM_TimeBaseStructure.TIM_CounterMode = TIM_CounterMode_Up; // zliczanie w gore
+	TIM_TimeBaseStructure.TIM_RepetitionCounter = 0;            // brak powtorzen
+	TIM_TimeBaseInit(TIM4, &TIM_TimeBaseStructure);             // inicjalizacja TIM4
+	TIM_ITConfig ( TIM4, TIM_IT_CC1 | TIM_IT_CC2 | TIM_IT_Update, ENABLE );  // wlaczenie przerwan
+	TIM_Cmd(TIM4, ENABLE);                                      // aktywacja timera TIM4
+
+	// konfiguracja kanalu 1 timera
+	TIM_OCInitStructure.TIM_OCMode = TIM_OCMode_Timing;         // brak zmian OCxREF
+	TIM_OCInitStructure.TIM_Pulse = 2000;                       // wartosc do porownania
+	TIM_OCInitStructure.TIM_OutputState = TIM_OutputState_Enable; // wlaczenie kanalu
+	TIM_OC1Init(TIM4, &TIM_OCInitStructure);   
+	
+	// konfiguracja kanalu 2 timera
+	TIM_OCInitStructure.TIM_OCMode = TIM_OCMode_Timing;         // brak zmian OCxREF
+	TIM_OCInitStructure.TIM_Pulse = 7000;                       // wartosc do porownania
+	TIM_OCInitStructure.TIM_OutputState = TIM_OutputState_Enable; // wlaczenie kanalu
+	TIM_OC2Init(TIM4, &TIM_OCInitStructure);     
+	
+	
+	
+	TIM_TimeBaseStructure.TIM_Prescaler = 7200-1;               // 72MHz/7200=10kHz
+	TIM_TimeBaseStructure.TIM_Period = 350;                     // 10kHz/350~=29Hz(35ms)
+	TIM_TimeBaseStructure.TIM_CounterMode = TIM_CounterMode_Up; // zliczanie w gore
+	TIM_TimeBaseStructure.TIM_RepetitionCounter = 0;            // brak powtorzen
+	TIM_TimeBaseInit(TIM3, &TIM_TimeBaseStructure);             // inicjalizacja TIM3
+	TIM_ITConfig ( TIM3, TIM_IT_Update, DISABLE );              // wylaczenie przerwan
+	TIM_Cmd(TIM3, DISABLE);                                     // wylaczenie timera
+	
+
+
+
+
+	TIM_TimeBaseStructure.TIM_Prescaler = 7200-1;
+	TIM_TimeBaseStructure.TIM_Period = 5000; // 2Hz -> 0.5s
+	TIM_TimeBaseStructure.TIM_RepetitionCounter = 0;
+	TIM_TimeBaseStructure.TIM_CounterMode = TIM_CounterMode_Up;
+	TIM_TimeBaseInit(TIM2, &TIM_TimeBaseStructure);
+
+	// konfiguracja kanalu timera
+	TIM_OCInitStructure.TIM_OCMode = TIM_OCMode_PWM1;
+	TIM_OCInitStructure.TIM_Pulse = 1; // minimalne przesuniecie
+	TIM_OCInitStructure.TIM_OutputState = TIM_OutputState_Enable;
+	TIM_OCInitStructure.TIM_OCPolarity = TIM_OCPolarity_Low;
+	TIM_OC2Init(TIM2, &TIM_OCInitStructure);
+	TIM_ITConfig ( TIM2, TIM_IT_CC2 , ENABLE );
+	TIM_Cmd(TIM2, ENABLE);
+	
+		// konfiguracja timera TIM4
 	// TODO
   
   // konfiguracja kanalu 1 timera TIM4

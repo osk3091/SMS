@@ -25,7 +25,9 @@
 #include "delay.h"
 #include "main.h"
 #include <stdio.h>
+#include "stm32f10x_exti.h"
 
+extern char buffer[32];
 /** @addtogroup STM32F10x_StdPeriph_Template
   * @{
   */
@@ -231,7 +233,14 @@ void RCC_IRQHandler(void)
 *******************************************************************************/
 void EXTI0_IRQHandler(void)
 {
-	// TODO
+	if(EXTI_GetITStatus(EXTI_Line0) != RESET){      // sprawdzenie przyczyny
+			LED(LED4,LED_TOGGLE);
+      EXTI_ClearITPendingBit(EXTI_Line0);         // wyczyszczenie bitu przerwania
+		
+		TIM_SetCounter(TIM3, 0);                    // reset licznika timera
+        TIM_ITConfig(TIM3, TIM_IT_Update, ENABLE ); // aktywacja przerwania 
+        TIM_Cmd(TIM3, ENABLE);                      // aktywacja timera TIM3
+    }
 }
 
 /*******************************************************************************
@@ -362,9 +371,17 @@ void DMA1_Channel7_IRQHandler(void)
 * Output         : None
 * Return         : None
 *******************************************************************************/
+
+const uint16_t V25 = 1750;     // gdy V25=1.41V dla napiecia odniesienia 3.3V
+const uint16_t Avg_Slope = 5;  // gdy Avg_Slope=4.3mV/C dla napiecia odniesienia 
 void ADC1_2_IRQHandler(void)
 {
-	// TODO
+	if(ADC_GetITStatus(ADC1, ADC_IT_EOC) != RESET){
+        ADC_ClearITPendingBit(ADC1, ADC_IT_EOC);
+				LED(LED6,LED_TOGGLE);
+        sprintf(buffer,"%2d*C",((V25-ADC_GetConversionValue(ADC1))/Avg_Slope+25));
+				
+    }
 }
 
 /*******************************************************************************
@@ -420,9 +437,20 @@ void CAN_SCE_IRQHandler(void)
 * Output         : None
 * Return         : None
 *******************************************************************************/
+
+extern unsigned char key_buff[];
+extern volatile unsigned int key_pt;
 void EXTI9_5_IRQHandler(void)
 {
-	// TODO
+	char c;
+	c = KB2char();
+	if(c != 0){
+		if(key_pt >31)
+			key_pt = 0;
+		key_buff[key_pt] = c;
+		key_pt++;
+	}
+	NVIC_ClearPendingIRQ(EXTI9_5_IRQn); 
 }
 
 /*******************************************************************************
@@ -480,6 +508,10 @@ void TIM1_CC_IRQHandler(void)
 *******************************************************************************/
 void TIM2_IRQHandler(void)
 {
+	if(TIM_GetITStatus(TIM2,TIM_IT_CC2) != RESET){ // sprawdzenie przyczyny
+        TIM_ClearITPendingBit(TIM2, TIM_IT_CC2);   // wyczyszczenie bitu przerw.
+        ADC_SoftwareStartConvCmd(ADC1, ENABLE); 
+    } 
 }
 
 /*******************************************************************************
@@ -491,7 +523,14 @@ void TIM2_IRQHandler(void)
 *******************************************************************************/
 void TIM3_IRQHandler(void)
 {
-	// TODO
+	
+	if(TIM_GetITStatus(TIM3,TIM_IT_Update) != RESET){ // sprawdzenie przyczyny
+        TIM_ClearITPendingBit(TIM3, TIM_IT_Update);   // wyczyszczenie bitu przerw.
+        if(GPIO_ReadInputDataBit(GPIOA, GPIO_Pin_0) == Bit_RESET) // jesli wcisniety
+            LED(LED5,LED_TOGGLE);                     // zrob cos (przelacz LED5)
+        TIM_ITConfig (TIM3, TIM_IT_Update, DISABLE ); // deaktywacja przerwania 
+        TIM_Cmd(TIM3, DISABLE);                       // deaktywacja timera TIM3
+    } 
 }
 
 /*******************************************************************************
@@ -503,7 +542,18 @@ void TIM3_IRQHandler(void)
 *******************************************************************************/
 void TIM4_IRQHandler(void)
 {	
-	// TODO
+	if(TIM_GetITStatus(TIM4,TIM_IT_CC1) != RESET){
+		LED(LED2,LED_ON);
+    TIM_ClearITPendingBit(TIM4, TIM_IT_CC1);
+	} else if(TIM_GetITStatus(TIM4,TIM_IT_CC2) != RESET){
+			LED(LED3,LED_ON);
+			TIM_ClearITPendingBit(TIM4, TIM_IT_CC2);
+	} else if(TIM_GetITStatus(TIM4,TIM_IT_Update) != RESET){
+			//LED(LED3,LED_TOGGLE);
+		LED(LED2,LED_OFF);
+			LED(LED3,LED_OFF);
+			TIM_ClearITPendingBit(TIM4, TIM_IT_Update);
+	}
 }
 
 /*******************************************************************************
