@@ -39,3 +39,7 @@ uint8_t Communication_Get(void);
 void Communication_Put(uint8_t c);
 void Enable50usTimer(void);
 void Disable50usTimer(void);
+
+extern unsigned char key_buffer[]; // tablica znaków z klawiatury
+extern volatile unsigned int key_pointer; // wskaünik na tp tablicÍ
+char KB2char (void); // identyfikuje klawisz, kod ASCII -> key buffer

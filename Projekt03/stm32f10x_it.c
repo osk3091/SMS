@@ -426,6 +426,13 @@ void CAN_SCE_IRQHandler(void)
 void EXTI9_5_IRQHandler(void)
 {
 	// TODO (?)
+	char c;
+	c = KB2char();
+	if (c != 0) { if (key_pointer > 31)
+		key_pointer = 0;
+		key_buffer[key_pointer] = c;
+		key_pointer++;
+	}// wyzeruj flagi oczekiwania na obs=ugÍ przerwania
 	EXTI_ClearITPendingBit(EXTI_Line6 | EXTI_Line7 | EXTI_Line8 | EXTI_Line9);
 }
 
@@ -507,8 +514,12 @@ void TIM3_IRQHandler(void)
 void TIM4_IRQHandler(void)
 {
 	if( TIM_GetITStatus(TIM4, TIM_IT_Update) ){
-		TIM_ClearITPendingBit(TIM4, TIM_IT_Update);
-		// TODO
+		//TIM_ClearITPendingBit(TIM4, TIM_IT_Update);
+		//ToDo 
+		if(TIM_GetITStatus(TIM4,TIM_IT_Update) != RESET){
+
+			TIM_ClearITPendingBit(TIM4, TIM_IT_Update);
+		}
 	}
 }
 
@@ -588,6 +599,14 @@ void SPI2_IRQHandler(void)
 void USART1_IRQHandler(void)
 {
 	// TODO
+	if( USART_GetITStatus(USART1, USART_IT_RXNE) ){
+		USART_ClearITPendingBit(USART1, USART_IT_RXNE);
+		SetCharacterReceived(true);
+	}
+	if( USART_GetITStatus(USART1, USART_IT_TXE) ){
+		USART_ClearITPendingBit(USART1, USART_IT_TXE);
+		SetCharacterReadyToTransmit();
+	}
 }
 
 /*******************************************************************************

@@ -19,12 +19,14 @@ void TIM4_Config(void);
 void ADC1_Config(void);	
 void USART1_Config(void);
 
-char KB2char(void);
+//char KB2char(void);
+unsigned char key_buffer[32] = {0}; // bufor na znaki z obs=ugi przerwania
+volatile unsigned int key_pointer = 0; // wskaünik do bufora
 
 uint8_t *resp;
 uint16_t resplen;
 MB_RESPONSE_STATE respstate;
-
+uint8_t write_single_coil_3[] = {0x00, 0x03, 0xFF, 0x00};
 int main(void) {
   RCC_Config();		  // konfiguracja RCC
   GPIO_Config();    // konfiguracja GPIO
@@ -35,17 +37,38 @@ int main(void) {
 	USART1_Config();	// konfiguracja USART1
 	//MB_Config( TODO );// konfiguracja MB
 	
-	//SysTick_Config( TODO ); // 10us
-	//NVIC_SetPriority(SysTick_IRQn, TODO ); 
+	//SysTick_Config( TODO ); // 10us // (72MHz/8) / 9000 = 1KHz (1/1KHz = 1ms)
+	//NVIC_SetPriority(SysTick_IRQn, 0);
 	//SysTick_CLKSourceConfig( TODO );
+	
+	NVIC_SetPriority(SysTick_IRQn, 0);
 	
 	LCD_Initialize(); // inicjalizacja LCD
 	
+	//unsigned int i;
+	//for (i=0; i<32; i++)
+	//	key_buffer[i] = ' ';
+	
 	while(1) {
+//		LCD_GoTo(0,0);
+//		for (i=0; i<16; i++){
+//			LCD_WriteCharacter(key_buffer[i]);
+//		}
+//		LCD_GoTo(0,1);
+//		for (i=16; i<32; i++){
+//			LCD_WriteCharacter(key_buffer[i]);
+//		}
+//		GPIO_WriteBit(GPIOB, GPIO_Pin_14, Bit_SET);
+//		delay_us(4000000);
+//		GPIO_WriteBit(GPIOB, GPIO_Pin_14, Bit_RESET);
+//		delay_us(4000000);
+
 		// ,,Regulator''
 		
 		// MB_SendRequest( ... );
+		MB_SendRequest(103, FUN_WRITE_SINGLE_COIL, write_single_coil_3, 4);
 		// respstate = MB_GetResponse( ... );
+		respstate = MB_GetResponse(103, FUN_WRITE_SINGLE_COIL, &resp, &resplen, 1000);
 		if(respstate != RESPONSE_OK){
 			// reakcja na blad komunikacji
 		}
@@ -61,31 +84,46 @@ void USART1_Config(){
 	USART_InitTypeDef USART_InitStruct;
 		
 	// Konfiguracja USART (przerwania wylaczone)
-	// TODO
+	USART_InitStruct.USART_BaudRate = 19200;
+	USART_InitStruct.USART_HardwareFlowControl = USART_HardwareFlowControl_None;
+	USART_InitStruct.USART_WordLength = USART_WordLength_9b;
+	USART_InitStruct.USART_Parity = USART_Parity_Even;
+	USART_InitStruct.USART_StopBits = USART_StopBits_1;
+	USART_InitStruct.USART_Mode = USART_Mode_Tx | USART_Mode_Rx;
+	USART_Init(USART1, &USART_InitStruct);
+	USART_ITConfig(USART1, USART_IT_RXNE, DISABLE);
+	USART_ITConfig(USART1, USART_IT_TXE, DISABLE);
 }
 
 void Communication_Mode(bool rx, bool tx){ // TODO
 	// jesli rx == true, wlacz przerwanie USART_IT_RXNE, w przeciwnym razie wylacz
 	// jesli tx == true, wlacz przerwanie USART_IT_TXE, w przeciwnym razie wylacz
+	USART_ITConfig(USART1, USART_IT_RXNE, rx?ENABLE:DISABLE);
+	USART_ITConfig(USART1, USART_IT_TXE , tx?ENABLE:DISABLE);
 }
 
 void Communication_Put(uint8_t ch){ // TODO
 	// wyslij znak na USART1
+	USART_SendData(USART1, ch);
 }
 
 uint8_t Communication_Get(void){ // TODO
 	uint8_t tmp = 0;
 	// odczytaj znak z USART1
 	// ustaw flage, ze znak juz nie jest do odczytu
+	tmp = USART_ReceiveData(USART1);
+	SetCharacterReceived(false);
 	return tmp;
 }
 
 void Enable50usTimer(void){ // TODO
 	// wlacz przerwanie TIM_IT_Update
+	TIM_ITConfig(TIM4, TIM_IT_Update, ENABLE);
 }
 
 void Disable50usTimer(void){ // TODO
 	// wylacz przerwanie TIM_IT_Update
+	TIM_ITConfig(TIM4, TIM_IT_Update, DISABLE);
 }
 
 void NVIC_Config(void){
@@ -146,10 +184,21 @@ void NVIC_Config(void){
 	NVIC_Init(&NVIC_InitStructure);
 	
 	// USART1 -- USART1_IRQn
-	// TODO
+	NVIC_InitStructure.NVIC_IRQChannel = USART1_IRQn;
+	NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority = 0;
+	NVIC_InitStructure.NVIC_IRQChannelSubPriority = 0;
+	NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE;
+	NVIC_Init(&NVIC_InitStructure);
+	USART_Cmd(USART1, ENABLE);
 	
 	// TIM4 (timer 50us) -- TIM4_IRQn
-	// TODO	
+	NVIC_ClearPendingIRQ(TIM4_IRQn); // wyczyszczenie bitu przerwania
+	NVIC_EnableIRQ(TIM4_IRQn); // wlaczenie obslugi przerwania
+	NVIC_InitStructure.NVIC_IRQChannel = TIM4_IRQn; // nazwa przerwania
+	NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority = 2; // priorytet wywlaszczania
+	NVIC_InitStructure.NVIC_IRQChannelSubPriority = 1; // podpriorytet
+	NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE; // wlaczenie
+	NVIC_Init(&NVIC_InitStructure); // inicjalizacja struktury
 }
 
 void RCC_Config(void) {
@@ -188,7 +237,9 @@ void RCC_Config(void) {
     RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOD, ENABLE);// wlacz taktowanie portu GPIO D
     RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOE, ENABLE);// wlacz taktowanie portu GPIO E
 		// wlacz taktowanie USART1
-		// TODO
+		RCC_APB2PeriphClockCmd(RCC_APB2Periph_AFIO , ENABLE); // wlacz taktowanie AFIO
+		RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOA, ENABLE); // wlacz taktowanie GPIOA
+		RCC_APB2PeriphClockCmd(RCC_APB2Periph_USART1, ENABLE); // wlacz taktowanie USART1
   }
 }
 
@@ -197,13 +248,21 @@ void GPIO_Config(void) {
   GPIO_InitTypeDef  GPIO_InitStructure; 
 	
 	// Konfiguracja Tx USART1 (PA9) -- funkcja alternatywna, push-pull
-	// TODO
+	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_9;
+	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AF_PP;
+	GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
+	GPIO_Init(GPIOA, &GPIO_InitStructure);
 
 	// Konfiguracja Tx USART2 (PA10) -- wejscie plywajace
-	// TODO
-		
+	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_10;
+	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IN_FLOATING;
+	GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
+	GPIO_Init(GPIOA, &GPIO_InitStructure);
+			
 	// Konfiguracja wejscia analogowego (PB0) -- wejscie analogowe
-	// TODO
+	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_0;
+	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IPU; // wejscie w trybie pull-up
+	GPIO_Init(GPIOA, &GPIO_InitStructure);
 	
 	// Konfiguracja LEDALL (PB8-PB15) -- wyjscie, push-pull
 	GPIO_InitStructure.GPIO_Pin = LEDALL;             		// pin 0
@@ -255,7 +314,13 @@ void TIM4_Config(void){
 	TIM_TimeBaseInitTypeDef TIM_TimeBaseStructure;
 	
 	// Konfiguracja timera TIM4 do odliczania kwantow 50us
-	// TODO
+	TIM_TimeBaseStructure.TIM_Prescaler = 7200-1; // 72MHz/7200=10kHz
+	TIM_TimeBaseStructure.TIM_Period = 10000; // 10kHz/10000=1Hz (1s)
+	TIM_TimeBaseStructure.TIM_CounterMode = TIM_CounterMode_Up; // zliczanie w gore
+	TIM_TimeBaseStructure.TIM_RepetitionCounter = 0; // brak powtorzen
+	TIM_TimeBaseInit(TIM4, &TIM_TimeBaseStructure); // inicjalizacja TIM4
+	TIM_ITConfig ( TIM4, TIM_IT_CC2 | TIM_IT_Update, ENABLE ); // wlaczenie przerwan
+	TIM_Cmd(TIM4, ENABLE); // aktywacja timera TIM4
 }
 
 void ADC1_Config(void) {
