@@ -84,6 +84,7 @@ void USART1_Config(){
 	USART_InitTypeDef USART_InitStruct;
 		
 	// Konfiguracja USART (przerwania wylaczone)
+	// TODO
 	USART_InitStruct.USART_BaudRate = 19200;
 	USART_InitStruct.USART_HardwareFlowControl = USART_HardwareFlowControl_None;
 	USART_InitStruct.USART_WordLength = USART_WordLength_9b;
@@ -184,6 +185,8 @@ void NVIC_Config(void){
 	NVIC_Init(&NVIC_InitStructure);
 	
 	// USART1 -- USART1_IRQn
+	// TODO
+	// USART1 -- USART1_IRQn
 	NVIC_InitStructure.NVIC_IRQChannel = USART1_IRQn;
 	NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority = 0;
 	NVIC_InitStructure.NVIC_IRQChannelSubPriority = 0;
@@ -192,6 +195,7 @@ void NVIC_Config(void){
 	USART_Cmd(USART1, ENABLE);
 	
 	// TIM4 (timer 50us) -- TIM4_IRQn
+	// TODO
 	NVIC_ClearPendingIRQ(TIM4_IRQn); // wyczyszczenie bitu przerwania
 	NVIC_EnableIRQ(TIM4_IRQn); // wlaczenie obslugi przerwania
 	NVIC_InitStructure.NVIC_IRQChannel = TIM4_IRQn; // nazwa przerwania
@@ -237,6 +241,7 @@ void RCC_Config(void) {
     RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOD, ENABLE);// wlacz taktowanie portu GPIO D
     RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOE, ENABLE);// wlacz taktowanie portu GPIO E
 		// wlacz taktowanie USART1
+		// TODO
 		RCC_APB2PeriphClockCmd(RCC_APB2Periph_AFIO , ENABLE); // wlacz taktowanie AFIO
 		RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOA, ENABLE); // wlacz taktowanie GPIOA
 		RCC_APB2PeriphClockCmd(RCC_APB2Periph_USART1, ENABLE); // wlacz taktowanie USART1
@@ -248,18 +253,21 @@ void GPIO_Config(void) {
   GPIO_InitTypeDef  GPIO_InitStructure; 
 	
 	// Konfiguracja Tx USART1 (PA9) -- funkcja alternatywna, push-pull
+	// TODO
 	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_9;
 	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AF_PP;
 	GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
 	GPIO_Init(GPIOA, &GPIO_InitStructure);
 
 	// Konfiguracja Tx USART2 (PA10) -- wejscie plywajace
+	// TODO
 	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_10;
 	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IN_FLOATING;
 	GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
 	GPIO_Init(GPIOA, &GPIO_InitStructure);
 			
 	// Konfiguracja wejscia analogowego (PB0) -- wejscie analogowe
+	// TODO
 	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_0;
 	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IPU; // wejscie w trybie pull-up
 	GPIO_Init(GPIOA, &GPIO_InitStructure);
@@ -314,6 +322,7 @@ void TIM4_Config(void){
 	TIM_TimeBaseInitTypeDef TIM_TimeBaseStructure;
 	
 	// Konfiguracja timera TIM4 do odliczania kwantow 50us
+	// TODO
 	TIM_TimeBaseStructure.TIM_Prescaler = 7200-1; // 72MHz/7200=10kHz
 	TIM_TimeBaseStructure.TIM_Period = 10000; // 10kHz/10000=1Hz (1s)
 	TIM_TimeBaseStructure.TIM_CounterMode = TIM_CounterMode_Up; // zliczanie w gore
