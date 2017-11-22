@@ -1,5 +1,4 @@
 #include "modbus.h"
-//#include "main.h"
 
 bool DiscretesInputBuf[DISCRETES_INPUT_NREGS];
 #if (DISCRETES_INPUT_MATCHES_COILS && COILS_ENABLED && DISCRETES_INPUT_ENABLED && (DISCRETES_INPUT_START) == COILS_START && (DISCRETES_INPUT_NREGS == COILS_NREGS) )
@@ -31,6 +30,8 @@ __IO bool t15_expired = false;
 __IO bool t35_expired = false;
 __IO bool _50us_timer_started = false;
 
+__IO uint16_t modbus_slave_address = 0;
+
 static MB_STATE state = STATE_START;
 
 void Timer50usTick(void){
@@ -43,7 +44,7 @@ void Timer50usTick(void){
 }
 
 void SetTimeout(__IO uint32_t msec){
-	timeout_time = msec*10;
+	timeout_time = msec*MB_MSEC_MUL;
 }
 
 void TimeoutTick(void){
@@ -114,6 +115,7 @@ void MB_SendRequest(uint8_t addr, MB_FUNCTION f, uint8_t* datain, uint16_t lenin
 	uint16_t crc = 0;
 	while(state != STATE_IDLE || demand_of_emmision); // waiting for IDLE state
 	MB_Buf_clear();
+	modbus_slave_address = addr;
 	MB_Buf[MB_Buf_size++] = addr;
 	MB_Buf[MB_Buf_size++] = f;
 	for(i = 0; i < lenin; ++i)
@@ -146,7 +148,10 @@ MB_RESPONSE_STATE MB_GetResponse(uint8_t addr, MB_FUNCTION f, uint8_t** dataout,
 }
 
 void MB_Config(uint32_t baudrate){
-	Set50usTimer((7UL*220000UL)/(2UL*baudrate), (3UL*220000UL)/(2UL*baudrate));
+	if(baudrate > 19200)
+		Set50usTimer(35, 15);
+	else	
+		Set50usTimer((7UL*220000UL)/(2UL*baudrate), (3UL*220000UL)/(2UL*baudrate));
 	Stop50usTimer();
 }
 
@@ -170,10 +175,10 @@ void MB(void){
 			}
 			break;
 		case STATE_IDLE:
-			if(demand_of_emmision){ // firstly we send, ...
+			if(demand_of_emmision){ // first we send, ...
 				Communication_Mode(false, false);
 				state = STATE_EMISSION;
-			} else if (character_recieved){          // ..., then we receive
+			} else if (character_recieved){        // ... then we receive
 				MB_Buf_append(Communication_Get());
 				Start50usTimer();
 				state = STATE_RECEPTION;				
@@ -259,7 +264,8 @@ uint8_t MB_Buf_pop(void){
 
 bool MB_Buf_control(void){
 	#if MB_MASTER
-		if(MB_Buf[0] != MB_SLAVE_ADDRESS && MB_Buf[0] != MB_BROADCAST_ADDRESS) return false;
+		if(MB_Buf[0] != modbus_slave_address && MB_Buf[0] != MB_BROADCAST_ADDRESS) 
+			return false;
 	#endif
 	if(CRC16((uint8_t*)MB_Buf, MB_Buf_size) != 0)	return false;
 	return true;
@@ -542,3 +548,10 @@ void MB_Buf_clear(void){
 	}
 	MB_Buf_size = 0;
 }
+
+// temporary implementation -- so that it compiles!
+__weak void Communication_Put(uint8_t c){} 
+__weak uint8_t Communication_Get(void){return 0;}
+__weak void Communication_Mode(bool rx, bool tx){}
+__weak void Enable50usTimer(void){}
+__weak void Disable50usTimer(void){}

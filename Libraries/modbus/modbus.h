@@ -49,22 +49,12 @@ typedef enum{COIL_ON 																			= 0xFF00,
 						 COIL_OFF 																		= 0x0000,
 } MB_COIL_STATE;
 
-void SetCharacterReadyToTransmit(void); // to call
-void SetCharacterReceived(bool); // to call
-void Timer50usTick(void); // to call
-void MB(void); // to call
-void MB_Config(uint32_t baudrate); // to call
-
 bool MB_Buf_append(uint8_t ch);
 uint8_t MB_Buf_pop(void);
 bool MB_Buf_control(void);
 void MB_Buf_process_slave(void);
 void MB_Buf_process_master(void);
 void MB_Buf_clear(void);
-
-void __attribute((weak)) Communication_Put(uint8_t c); // to implement
-uint8_t __attribute((weak)) Communication_Get(void); // to implement
-void __attribute((weak)) Communication_Mode(bool, bool); // to implement
 
 void Set50usTimer(uint32_t ticks35, uint32_t ticks15);
 void Start50usTimer(void);
@@ -77,11 +67,19 @@ bool Ist35Expired(void);
 bool Is50usTimerStarted(void);
 void TimeoutTick(void);
 
-void __attribute((weak)) Enable50usTimer(void); // to implement
-void __attribute((weak)) Disable50usTimer(void); // to implement
-
 void MB_SendRequest(uint8_t addr, MB_FUNCTION f, uint8_t* datain, uint16_t lenin);
 MB_RESPONSE_STATE MB_GetResponse(uint8_t addr, MB_FUNCTION f, uint8_t** dataout, uint16_t* lenout, uint32_t timeout);
 
+extern void Communication_Put(uint8_t c); 					// to implement
+extern uint8_t Communication_Get(void); 						// to implement
+extern void Communication_Mode(bool rx, bool tx); 	// to implement
+extern void Enable50usTimer(void); 									// to implement
+extern void Disable50usTimer(void); 								// to implement
+
+void SetCharacterReadyToTransmit(void); 	// set flag, that the character is ready to be transmitted
+void SetCharacterReceived(bool); 					// set flag, that the character is available/no more available to read
+void Timer50usTick(void); 								// increment the number of 50us ticks accumulated
+void MB(void); 														// to call from time to time (each 10us)
+void MB_Config(uint32_t baudrate); 				// to call at the beggining (to configure timer)
 
 #endif

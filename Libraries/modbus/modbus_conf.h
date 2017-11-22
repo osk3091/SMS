@@ -3,7 +3,7 @@
 
 #define MB_MASTER 																	1
 #define MB_SLAVE 																		( MB_MASTER == 0 )
-#define MB_SLAVE_ADDRESS 														104
+#define MB_SLAVE_ADDRESS 														102
 #define MB_BROADCAST_ADDRESS 												0x00
 
 #define DISCRETES_INPUT_ENABLED				        			0
@@ -28,5 +28,6 @@
 #define INPUT_REGISTERS_MATCHES_HOLDING_REGISTERS		0
 
 #define MB_BUF_SIZE_MAX															1024
+#define MB_MSEC_MUL																	100
 
 #endif
