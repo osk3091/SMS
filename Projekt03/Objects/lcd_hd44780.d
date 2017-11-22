@@ -3,7 +3,7 @@
 .\objects\lcd_hd44780.o: ..\Libraries\STM32F10x_StdPeriph_Driver\inc\stm32f10x_gpio.h
 .\objects\lcd_hd44780.o: ..\Libraries\CMSIS\CM3\DeviceSupport\ST\STM32F10x\stm32f10x.h
 .\objects\lcd_hd44780.o: ..\Libraries\CMSIS\CM3\CoreSupport\core_cm3.h
-.\objects\lcd_hd44780.o: P:\softwares\Keil_v5\ARM\ARMCC\Bin\..\include\stdint.h
+.\objects\lcd_hd44780.o: C:\Keil_v5\ARM\ARMCC\Bin\..\include\stdint.h
 .\objects\lcd_hd44780.o: ..\Libraries\CMSIS\CM3\DeviceSupport\ST\STM32F10x\system_stm32f10x.h
 .\objects\lcd_hd44780.o: ..\Projekt03\stm32f10x_conf.h
 .\objects\lcd_hd44780.o: ..\Libraries\STM32F10x_StdPeriph_Driver\inc\stm32f10x_adc.h

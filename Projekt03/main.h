@@ -34,12 +34,11 @@ bool SW_MANY(uint16_t sw, enum SW_OPERATION op);
 //bool Is50usTimerStarted(void);
 //void TimeoutTick(void);
 
-void Communication_Mode(bool rx, bool tx);
-uint8_t Communication_Get(void);
-void Communication_Put(uint8_t c);
-void Enable50usTimer(void);
-void Disable50usTimer(void);
+
 
 extern unsigned char key_buffer[]; // tablica znaków z klawiatury
 extern volatile unsigned int key_pointer; // wskaünik na tp tablicÍ
 char KB2char (void); // identyfikuje klawisz, kod ASCII -> key buffer
+void LCD_Refresh(void);
+
+

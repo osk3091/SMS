@@ -362,12 +362,13 @@ void DMA1_Channel7_IRQHandler(void)
 * Output         : None
 * Return         : None
 *******************************************************************************/
+double adc;
 void ADC1_2_IRQHandler(void){
 	if(ADC_GetITStatus(ADC1, ADC_IT_EOC) != RESET){
-    ADC_ClearITPendingBit(ADC1, ADC_IT_EOC);
-		// zapis odczytu z ADC
-		//... = ADC_GetConversionValue(ADC1);
-	}
+        ADC_ClearITPendingBit(ADC1, ADC_IT_EOC);
+        adc = ADC_GetConversionValue(ADC1);
+				
+    }
 }
 
 /*******************************************************************************
@@ -491,7 +492,12 @@ void TIM1_CC_IRQHandler(void)
 *******************************************************************************/
 void TIM2_IRQHandler(void)
 {
+	if(TIM_GetITStatus(TIM2,TIM_IT_CC2) != RESET){ // sprawdzenie przyczyny
+        TIM_ClearITPendingBit(TIM2, TIM_IT_CC2);   // wyczyszczenie bitu przerw.
+        ADC_SoftwareStartConvCmd(ADC1, ENABLE); 
+    } 
 }
+
 
 /*******************************************************************************
 * Function Name  : TIM3_IRQHandler
@@ -516,10 +522,10 @@ void TIM4_IRQHandler(void)
 	if( TIM_GetITStatus(TIM4, TIM_IT_Update) ){
 		//TIM_ClearITPendingBit(TIM4, TIM_IT_Update);
 		//ToDo 
-		if(TIM_GetITStatus(TIM4,TIM_IT_Update) != RESET){
+	TIM_ClearITPendingBit(TIM4, TIM_IT_Update);
+	Timer50usTick();
+			
 
-			TIM_ClearITPendingBit(TIM4, TIM_IT_Update);
-		}
 	}
 }
 

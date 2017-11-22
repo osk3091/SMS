@@ -17,6 +17,6 @@
 ".\objects\crc16.o"
 ".\objects\modbus.o"
 --strict --scatter ".\Objects\projekt03.sct"
---summary_stderr --info summarysizes --map --load_addr_map_info --xref --callgraph --symbols
+--summary_stderr --info summarysizes --map --xref --callgraph --symbols
 --info sizes --info totals --info unused --info veneers
 --list ".\Listings\projekt03.map" -o .\Objects\projekt03.axf

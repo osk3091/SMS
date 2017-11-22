@@ -18,6 +18,7 @@ void TIM2_Config(void);
 void TIM4_Config(void);	
 void ADC1_Config(void);	
 void USART1_Config(void);
+unsigned int readADC(void);
 
 //char KB2char(void);
 unsigned char key_buffer[32] = {0}; // bufor na znaki z obs=ugi przerwania
@@ -26,7 +27,16 @@ volatile unsigned int key_pointer = 0; // wskaünik do bufora
 uint8_t *resp;
 uint16_t resplen;
 MB_RESPONSE_STATE respstate;
-uint8_t write_single_coil_3[] = {0x00, 0x03, 0xFF, 0x00};
+MB_RESPONSE_STATE respstate_fun;
+uint8_t write_single_coil_3[] = {0x00, 0x00, 0x00, 0x01};
+
+uint8_t fanon[] = {0x00, 0x00, 0x03, 0xE8};
+uint8_t fanoff[] = {0x00, 0x00, 0x00, 0x00};
+char buffer[32];
+
+uint16_t temp;
+
+extern double adc;
 int main(void) {
   RCC_Config();		  // konfiguracja RCC
   GPIO_Config();    // konfiguracja GPIO
@@ -35,20 +45,22 @@ int main(void) {
 	TIM4_Config();		// konfiguracja TIM4
 	ADC1_Config();		// konfiguracja ADC1
 	USART1_Config();	// konfiguracja USART1
-	//MB_Config( TODO );// konfiguracja MB
-	
-	//SysTick_Config( TODO ); // 10us // (72MHz/8) / 9000 = 1KHz (1/1KHz = 1ms)
-	//NVIC_SetPriority(SysTick_IRQn, 0);
-	//SysTick_CLKSourceConfig( TODO );
+	MB_Config( 115200 );// konfiguracja MB
+		Communication_Mode(false, false);
+
+
+	SysTick_Config( 90 ); // 10us // (72MHz/8) / 9000 = 1KHz (1/1KHz = 1ms)
 	
 	NVIC_SetPriority(SysTick_IRQn, 0);
+	SysTick_CLKSourceConfig(SysTick_CLKSource_HCLK_Div8);
+		Delay_ms(300);	
+
 	
 	LCD_Initialize(); // inicjalizacja LCD
-	
+	USART_SendData(USART1,'c');
 	//unsigned int i;
 	//for (i=0; i<32; i++)
 	//	key_buffer[i] = ' ';
-	
 	while(1) {
 //		LCD_GoTo(0,0);
 //		for (i=0; i<16; i++){
@@ -65,14 +77,41 @@ int main(void) {
 
 		// ,,Regulator''
 		
+			// MB_SendRequest( ... );
+		//MB_SendRequest(12, FUN_READ_INPUT_REGISTER, write_single_coil_3, 4);
+		temp = resp[1]*0x100+resp[2];
+		
+		if((temp/100)>=30){
+			MB_SendRequest(12, FUN_WRITE_SINGLE_REGISTER, fanon, 4);
+			respstate_fun = MB_GetResponse(12, FUN_WRITE_SINGLE_REGISTER, &resp, &resplen, 1000);
+			
+		}else{
+			MB_SendRequest(12, FUN_WRITE_SINGLE_REGISTER, fanoff, 4);
+			respstate_fun = MB_GetResponse(12, FUN_WRITE_SINGLE_REGISTER, &resp, &resplen, 1000);
+		}
+		resp = NULL;
 		// MB_SendRequest( ... );
-		MB_SendRequest(103, FUN_WRITE_SINGLE_COIL, write_single_coil_3, 4);
+		MB_SendRequest(12, FUN_READ_INPUT_REGISTER, write_single_coil_3, 4);
 		// respstate = MB_GetResponse( ... );
-		respstate = MB_GetResponse(103, FUN_WRITE_SINGLE_COIL, &resp, &resplen, 1000);
+		respstate = MB_GetResponse(12, FUN_READ_INPUT_REGISTER, &resp, &resplen, 1000);
+		
+
+		switch(respstate){
+			case RESPONSE_TIMEOUT:	
+			break;
+			case RESPONSE_WRONG_ADDRESS:
+			break;
+			case RESPONSE_WRONG_FUNCTION:
+			break;
+			case RESPONSE_ERROR:
+			break;
+			
+		}
 		if(respstate != RESPONSE_OK){
 			// reakcja na blad komunikacji
+			
 		}
-		
+		LCD_Refresh();
 		// TODO
 		
 		Delay_ms(500);
@@ -85,7 +124,7 @@ void USART1_Config(){
 		
 	// Konfiguracja USART (przerwania wylaczone)
 	// TODO
-	USART_InitStruct.USART_BaudRate = 19200;
+	USART_InitStruct.USART_BaudRate = 115200;
 	USART_InitStruct.USART_HardwareFlowControl = USART_HardwareFlowControl_None;
 	USART_InitStruct.USART_WordLength = USART_WordLength_9b;
 	USART_InitStruct.USART_Parity = USART_Parity_Even;
@@ -94,6 +133,8 @@ void USART1_Config(){
 	USART_Init(USART1, &USART_InitStruct);
 	USART_ITConfig(USART1, USART_IT_RXNE, DISABLE);
 	USART_ITConfig(USART1, USART_IT_TXE, DISABLE);
+	USART_Cmd(USART1, ENABLE);
+
 }
 
 void Communication_Mode(bool rx, bool tx){ // TODO
@@ -132,7 +173,7 @@ void NVIC_Config(void){
 	EXTI_InitTypeDef EXTI_InitStructure;
 	
 	NVIC_SetVectorTable(NVIC_VectTab_FLASH, 0x0);
-	// NVIC_PriorityGroupConfig( TODO );
+	NVIC_PriorityGroupConfig( NVIC_PriorityGroup_2 );
 	
 	// Klawiatura PD6 -> EXTI
 	GPIO_EXTILineConfig(GPIO_PortSourceGPIOD, GPIO_PinSource6);
@@ -179,28 +220,28 @@ void NVIC_Config(void){
 	NVIC_ClearPendingIRQ(ADC1_2_IRQn);
 	NVIC_EnableIRQ(ADC1_2_IRQn);
 	NVIC_InitStructure.NVIC_IRQChannel = ADC1_2_IRQn;
-	NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority = 3;
-	NVIC_InitStructure.NVIC_IRQChannelSubPriority = 3;
+	NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority = 1;
+	NVIC_InitStructure.NVIC_IRQChannelSubPriority = 1;
 	NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE;
 	NVIC_Init(&NVIC_InitStructure);
 	
 	// USART1 -- USART1_IRQn
 	// TODO
-	// USART1 -- USART1_IRQn
+	// USART1 -- USART1_IRQn	
+	NVIC_EnableIRQ(USART1_IRQn);
 	NVIC_InitStructure.NVIC_IRQChannel = USART1_IRQn;
-	NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority = 0;
+	NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority =0;
 	NVIC_InitStructure.NVIC_IRQChannelSubPriority = 0;
 	NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE;
 	NVIC_Init(&NVIC_InitStructure);
-	USART_Cmd(USART1, ENABLE);
 	
 	// TIM4 (timer 50us) -- TIM4_IRQn
 	// TODO
 	NVIC_ClearPendingIRQ(TIM4_IRQn); // wyczyszczenie bitu przerwania
 	NVIC_EnableIRQ(TIM4_IRQn); // wlaczenie obslugi przerwania
 	NVIC_InitStructure.NVIC_IRQChannel = TIM4_IRQn; // nazwa przerwania
-	NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority = 2; // priorytet wywlaszczania
-	NVIC_InitStructure.NVIC_IRQChannelSubPriority = 1; // podpriorytet
+	NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority = 0; // priorytet wywlaszczania
+	NVIC_InitStructure.NVIC_IRQChannelSubPriority = 0; // podpriorytet
 	NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE; // wlaczenie
 	NVIC_Init(&NVIC_InitStructure); // inicjalizacja struktury
 }
@@ -261,6 +302,7 @@ void GPIO_Config(void) {
 
 	// Konfiguracja Tx USART2 (PA10) -- wejscie plywajace
 	// TODO
+	
 	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_10;
 	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IN_FLOATING;
 	GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
@@ -268,6 +310,13 @@ void GPIO_Config(void) {
 			
 	// Konfiguracja wejscia analogowego (PB0) -- wejscie analogowe
 	// TODO
+	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_0; // pin 0
+	GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz; // szybkosc 50 MHz
+	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IN_FLOATING;// wyjscie w floating
+	GPIO_Init(GPIOB, &GPIO_InitStructure);
+	
+	
+	
 	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_0;
 	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IPU; // wejscie w trybie pull-up
 	GPIO_Init(GPIOA, &GPIO_InitStructure);
@@ -293,7 +342,16 @@ void GPIO_Config(void) {
 
 void LCD_Refresh(void){
 	LCD_GoTo(0,0);
-	LCD_WriteText((unsigned char*)"Wake up!"); // wyswietl zawartosc bufora na LCD
+	
+	//for
+	//respstate = MB_GetResponse(103, FUN_WRITE_SINGLE_COIL, &resp, &resplen, 1000);
+	
+	sprintf((char*)(buffer),"temp: %2d.%1d",(temp)/100,(temp/10)%10);
+	LCD_WriteText(buffer); // wyswietl zawartosc bufora na LCD
+	
+	LCD_GoTo(0,1);
+	sprintf((char*)(buffer),"adc: %6.3f", ((adc*3.3/4095 - 0.64)*(90/2.56)- 30));
+	LCD_WriteText(buffer); // wyswietl zawartosc bufora na LCD
 	// Wyswietlenie wszystkich informacji jednoczesnie
 	// TODO
 }
@@ -323,12 +381,12 @@ void TIM4_Config(void){
 	
 	// Konfiguracja timera TIM4 do odliczania kwantow 50us
 	// TODO
-	TIM_TimeBaseStructure.TIM_Prescaler = 7200-1; // 72MHz/7200=10kHz
-	TIM_TimeBaseStructure.TIM_Period = 10000; // 10kHz/10000=1Hz (1s)
+	TIM_TimeBaseStructure.TIM_Prescaler = 0; // 72MHz/7200=10kHz
+	TIM_TimeBaseStructure.TIM_Period = 3600-1; // 10kHz/10000=1Hz (1s)
 	TIM_TimeBaseStructure.TIM_CounterMode = TIM_CounterMode_Up; // zliczanie w gore
 	TIM_TimeBaseStructure.TIM_RepetitionCounter = 0; // brak powtorzen
 	TIM_TimeBaseInit(TIM4, &TIM_TimeBaseStructure); // inicjalizacja TIM4
-	TIM_ITConfig ( TIM4, TIM_IT_CC2 | TIM_IT_Update, ENABLE ); // wlaczenie przerwan
+	TIM_ITConfig ( TIM4, TIM_IT_Update, ENABLE ); // wlaczenie przerwan
 	TIM_Cmd(TIM4, ENABLE); // aktywacja timera TIM4
 }
 
@@ -356,6 +414,12 @@ void ADC1_Config(void) {
 	ADC_StartCalibration(ADC1);                         // start kalibracji ADC1
 	while(ADC_GetCalibrationStatus(ADC1));              // czekaj na koniec kalibracji
 }
+
+unsigned int readADC(void){
+    ADC_SoftwareStartConvCmd(ADC1, ENABLE);                  // start pomiaru
+    while(ADC_GetFlagStatus(ADC1, ADC_FLAG_EOC) == RESET);   // czekaj na koniec pomiaru
+    return ADC_GetConversionValue(ADC1);                     // odczyt pomiaru (12 bit)
+} 
 
 char KB2char(void){
 	unsigned int GPIO_Pin_row, GPIO_Pin_col, i, j;
