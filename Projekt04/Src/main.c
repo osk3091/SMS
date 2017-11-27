@@ -88,6 +88,8 @@ uint32_t ts_colors[] = {
 };
 char text[100] = {0};
 
+void mandelbrot();
+
 /* Private function prototypes -- DO NOT CHANGE ------------------------------*/
 void SystemClock_Config(void);
 void Error_Handler(void);
@@ -192,6 +194,51 @@ int main(void)
 		}
 		/* --------------- End of sample code --------------- */
   }
+}
+
+void mandelbrot(){
+    static int Px = 0;
+    static int Py = 0;
+    static float x = 0;
+    static float xtemp = 0;
+    static float y = 0;
+    static float x0 = 0;
+    static float y0 = 0;
+    static uint8_t iteration = 0;
+
+    // obszar rysowany zbioru Mandelbrota
+    static float xmin = -0.1011-0.01;
+    static float xmax = -0.1011+0.01;
+    static float ymin =  0.9563-0.01;
+    static float ymax =  0.9563+0.01;
+
+    // for(Px=nr pierwszej kolumny pixeli; Px<=nr ostatniej kolumny pixeli; ++Px)
+    for(;;++Px){ // TODO
+        // for(Py=nr pierwszego wiersza pixeli; Px<=nr ostatniego wiersza pixeli; ++Py)
+        for(;;++Py){ //TODO
+            // wyznaczyc x0 i y0 tak, aby:
+            // x0 = xmin <=> Px = indeks pierwszej kolumny pikseli;
+            // x0 = xmax <=> Px = indeks ostatniej kolumny pikseli;
+            // y0 = ymin <=> Py = indeks pierwszego wiersza pikseli;
+            // y0 = ymax <=> Py = indeks ostatniego wiersza pikseli;
+
+            x0 = 0.0; // TODO
+            y0 = 0.0; // TODO
+            // algorytm rysujacy zbior Mandelbrota
+            x = 0.0;
+            y = 0.0;
+            iteration = 0;
+            while ((x*x + y*y < 2*2) && (iteration < 0xFF)) {
+                xtemp = x*x - y*y + x0;
+                y = 2*x*y + y0;
+                x = xtemp;
+                iteration = iteration + 1;
+            }
+            // rysowanie piksela w punkcie Px, Py, 
+            // o kolorze zaleznym od wartosci iteration (0x00-0xFF)
+            // TODO
+        }
+    }
 }
 
 /* Function to test timers */
