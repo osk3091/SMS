@@ -34,6 +34,7 @@
 #include "stm32f7xx_hal.h"
 #include "stm32746g_discovery.h"
 #include "stm32746g_discovery_lcd.h"
+#include "stm32746g_discovery_ts.h"
 
 /* Private variables ---------------------------------------------------------*/
 ADC_HandleTypeDef hadc3;
@@ -79,6 +80,7 @@ __IO uint32_t output = 0;
 
 	char text[100] = "TEST";
 
+float yzad=1000;
 int main(void)
 {
   HAL_Init();
@@ -114,6 +116,18 @@ int main(void)
   HAL_NVIC_EnableIRQ(TIM5_IRQn);
   HAL_NVIC_EnableIRQ(USART1_IRQn);
 	
+	/* Configuration of the LCD, TouchScreen and fonts displayed */
+  MX_LTDC_Init();
+	LCD_Config();
+	BSP_LCD_SetFont(&Font8); // choose size of the font: Font8, Font12, Font16, Font20, Font24
+	BSP_LCD_SetBackColor(LCD_COLOR_WHITE); // each character has background!!!
+	BSP_TS_Init(0,0); // initialisation of TouchScreen -- arguments are irrelevant
+		
+  /* Configuration of the LED1 and blue Push Button -- both on the bottom side of the PCB */
+	BSP_LED_Init(LED1);	// configuration of LED1 -- the on below the black reset push button
+	BSP_PB_Init(BUTTON_TAMPER, BUTTON_MODE_GPIO); // configuration of the blue push button
+	
+	
 	while(HAL_UART_GetState(&huart) == HAL_UART_STATE_BUSY_TX);
 	
 	MX_TIM2_Init();
@@ -121,8 +135,11 @@ int main(void)
   MX_TIM4_Init();
   MX_TIM5_Init();	
 	
-	while (1){			
-		
+	while (1){	
+		//sprintf(text,"Y=%4d;U=%4d;", 54, 45);
+		//updateControlSignalValue(0);
+
+		BSP_LCD_DisplayStringAt( 10, 20, (uint8_t*)"TIM2", LEFT_MODE);
 	}
 }
 void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin){
@@ -136,15 +153,47 @@ void updateControlSignalValue(uint16_t out){
 	HAL_I2C_Master_Transmit(&hi2c1, 0xC2, (uint8_t*)buffertx, 2,1000);
 }
 
+float U_1, E[3];
+int i = 0;
+//float yzad=-1000;
+
+//Ziegler-Nichols
+float Tu=0.65;
+float Ti = 0.65/2;
+float Td = 0.65/8;
+float K = 12*0.6; //Ku=12
+
+//metoda izynierska
+/*float Tu=0.65;
+float Ti = 0.65/2;
+float Td = 0.65/8;
+float K = 12*0.6; //Ku=12*/
+
+static float T=0.05;
+static float r2,r1,r0;
+
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim){
 	if(htim->Instance == TIM2){
 		static float y = 0.0f;
 		static float u = 0.0f;
 		y = (input-2048.0f); // przejscie z 0 - 4095 do -2048 - 2047
 
-		u = 0.0; // <-- tutaj algorytm regulacji
+	
 		
+		r2=K*Td/T;
+		r1=K*(T/(2*Ti)-(2*(Td/T))-1);
+		r0=K*(1+(T/(2*Ti))+(Td/T));
+		
+		
+		u = r2*E[0]+r1*E[1]+r0*E[2] + U_1; // <-- tutaj algorytm regulacji
+		
+		E[0]=E[1];
+		E[1]=E[2];
+		E[2]=yzad - y;
+	
+		U_1 = u;
 
+		
 		if(u >  2047.0f) u =  2047.0f;
 		if(u < -2048.0f) u = -2048.0f;
 		output = u+2048.0f; // przejscie z -2048 - 2047 do 0 - 4095
